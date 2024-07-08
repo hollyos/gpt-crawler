@@ -1,7 +1,1 @@
 Archive.zip filter=lfs diff=lfs merge=lfs -text
-output-ai.zip filter=lfs diff=lfs merge=lfs -text
-output-api.zip filter=lfs diff=lfs merge=lfs -text
-output-backend.zip filter=lfs diff=lfs merge=lfs -text
-output-db.zip filter=lfs diff=lfs merge=lfs -text
-output-frontend.zip filter=lfs diff=lfs merge=lfs -text
-output.zip filter=lfs diff=lfs merge=lfs -text
