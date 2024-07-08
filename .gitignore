@@ -17,3 +17,8 @@ storage
 .env
 pnpm-lock.yaml
 output/
+output-ai/
+output-api/
+output-backend/
+output-db/
+output-frontend/
