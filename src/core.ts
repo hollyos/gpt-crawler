@@ -1,4 +1,3 @@
-// For more information, see https://crawlee.dev/
 import { Configuration, PlaywrightCrawler, downloadListOfUrls } from "crawlee";
 import { readFile, writeFile } from "fs/promises";
 import { glob } from "glob";
@@ -9,6 +8,33 @@ import { PathLike } from "fs";
 
 let pageCounter = 0;
 let crawler: PlaywrightCrawler;
+
+// Exponential backoff function
+const sleep = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
+
+async function retryOn429(requestHandler: Function, maxRetries = 5, delay = 1000) {
+  for (let attempt = 1; attempt <= maxRetries; attempt++) {
+    try {
+      // Try running the handler (i.e., the crawl request)
+      await requestHandler();
+      break; // If successful, exit the retry loop
+    } catch (err: any) {
+      if (err.message.includes('429') || err.message.includes('Too Many Requests')) {
+        console.log(`Received 429 error, retrying after delay... (Attempt ${attempt} of ${maxRetries})`);
+
+        if (attempt < maxRetries) {
+          // Exponentially increase the delay
+          await sleep(delay * attempt);
+        } else {
+          console.log('Max retries reached. Skipping this request.');
+          throw err; // If the max retries are reached, rethrow the error
+        }
+      } else {
+        throw err; // If it's not a 429 error, rethrow the error immediately
+      }
+    }
+  }
+}
 
 export function getPageHtml(page: Page, selector = "body") {
   return page.evaluate((selector) => {
@@ -52,65 +78,62 @@ export async function crawl(config: Config) {
   configSchema.parse(config);
 
   if (process.env.NO_CRAWL !== "true") {
-    // PlaywrightCrawler crawls the web using a headless
-    // browser controlled by the Playwright library.
+    // PlaywrightCrawler crawls the web using a headless browser controlled by the Playwright library.
     crawler = new PlaywrightCrawler(
       {
         // Use the requestHandler to process each of the crawled pages.
         async requestHandler({ request, page, enqueueLinks, log, pushData }) {
-          const title = await page.title();
-          pageCounter++;
-          log.info(
-            `Crawling: Page ${pageCounter} / ${config.maxPagesToCrawl} - URL: ${request.loadedUrl}...`,
-          );
+          await retryOn429(async () => {
+            const title = await page.title();
+            pageCounter++;
+            log.info(
+              `Crawling: Page ${pageCounter} / ${config.maxPagesToCrawl} - URL: ${request.loadedUrl}...`,
+            );
 
-          // Use custom handling for XPath selector
-          if (config.selector) {
-            if (config.selector.startsWith("/")) {
-              await waitForXPath(
-                page,
-                config.selector,
-                config.waitForSelectorTimeout ?? 1000,
-              );
-            } else {
-              await page.waitForSelector(config.selector, {
-                timeout: config.waitForSelectorTimeout ?? 1000,
-              });
+            // Use custom handling for XPath selector
+            if (config.selector) {
+              if (config.selector.startsWith("/")) {
+                await waitForXPath(
+                  page,
+                  config.selector,
+                  config.waitForSelectorTimeout ?? 1000,
+                );
+              } else {
+                await page.waitForSelector(config.selector, {
+                  timeout: config.waitForSelectorTimeout ?? 1000,
+                });
+              }
             }
-          }
 
-          const html = await getPageHtml(page, config.selector);
+            const html = await getPageHtml(page, config.selector);
 
-          // Save results as JSON to ./storage/datasets/default
-          await pushData({ title, url: request.loadedUrl, html });
+            // Save results as JSON to ./storage/datasets/default
+            await pushData({ title, url: request.loadedUrl, html });
 
-          if (config.onVisitPage) {
-            await config.onVisitPage({ page, pushData });
-          }
+            if (config.onVisitPage) {
+              await config.onVisitPage({ page, pushData });
+            }
 
-          // Extract links from the current page
-          // and add them to the crawling queue.
-          await enqueueLinks({
-            globs:
-              typeof config.match === "string" ? [config.match] : config.match,
-            exclude:
-              typeof config.exclude === "string"
-                ? [config.exclude]
-                : config.exclude ?? [],
-          });
+            // Extract links from the current page
+            // and add them to the crawling queue.
+            await enqueueLinks({
+              globs:
+                typeof config.match === "string" ? [config.match] : config.match,
+              exclude:
+                typeof config.exclude === "string"
+                  ? [config.exclude]
+                  : config.exclude ?? [],
+            });
+          }, 5, 1000); // Max 5 retries with initial 1-second delay
         },
-        // Comment this option to scrape the full website.
         maxRequestsPerCrawl: config.maxPagesToCrawl,
-        // Uncomment this option to see the browser window.
-        // headless: false,
         preNavigationHooks: [
-          // Abort requests for certain resource types
           async ({ request, page, log }) => {
-            // If there are no resource exclusions, return
-            const RESOURCE_EXCLUSTIONS = config.resourceExclusions ?? [];
-            if (RESOURCE_EXCLUSTIONS.length === 0) {
+            const RESOURCE_EXCLUSIONS = config.resourceExclusions ?? [];
+            if (RESOURCE_EXCLUSIONS.length === 0) {
               return;
             }
+
             if (config.cookie) {
               const cookies = (
                 Array.isArray(config.cookie) ? config.cookie : [config.cookie]
@@ -123,13 +146,12 @@ export async function crawl(config: Config) {
               });
               await page.context().addCookies(cookies);
             }
+
             await page.route(
-              `**\/*.{${RESOURCE_EXCLUSTIONS.join()}}`,
+              `**/*.{${RESOURCE_EXCLUSIONS.join()}}`,
               (route) => route.abort("aborted"),
             );
-            log.info(
-              `Aborting requests for as this is a resource excluded route`,
-            );
+            log.info(`Aborting requests for this resource-excluded route`);
           },
         ],
       },
