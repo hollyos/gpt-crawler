@@ -1,7 +1,7 @@
 import { defaultConfig } from "../config.js";
 import { crawl, write } from "./core.js";
-import { promises as fs } from 'fs';
-import path from 'path';
+import { promises as fs } from "fs";
+import path from "path";
 
 import type { Config } from "./config.js";
 
@@ -20,8 +20,8 @@ const fetchData = async () => {
     const { category, outputFileName, url } = datapoint;
 
     // Define the output path based on category and outputFileName
-    let outputPath = 'output/';
-    if (typeof category === 'string' && category !== '') {
+    let outputPath = "output/";
+    if (typeof category === "string" && category !== "") {
       outputPath += `${category}/`;
     }
     outputPath += `${outputFileName}.json`;
@@ -31,16 +31,16 @@ const fetchData = async () => {
       await ensureDirectoryExists(outputPath);
     } catch (err) {
       console.error(`Failed to create directory for ${outputPath}:`, err);
-      continue;  // Skip this iteration if directory creation fails
+      continue; // Skip this iteration if directory creation fails
     }
 
     // Create the url configuration for crawling
     const urlConfig: Config = {
       url,
       outputFileName: outputPath,
-      match: `${url}/**`,  // Match all sub-pages under the main URL
+      match: `${url}/**`, // Match all sub-pages under the main URL
       maxPagesToCrawl: 20000,
-      maxTokens: 2000000,  // Max tokens for the output file
+      maxTokens: 2000000, // Max tokens for the output file
     };
 
     console.log(`Crawling started for: ${url}`);
@@ -57,8 +57,10 @@ const fetchData = async () => {
   }
 };
 
-fetchData().then(() => {
-  console.log("All crawls have been completed.");
-}).catch((error) => {
-  console.error("An error occurred during the crawling process:", error);
-});
+fetchData()
+  .then(() => {
+    console.log("All crawls have been completed.");
+  })
+  .catch((error) => {
+    console.error("An error occurred during the crawling process:", error);
+  });

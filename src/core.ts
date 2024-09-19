@@ -12,21 +12,30 @@ let crawler: PlaywrightCrawler;
 // Exponential backoff function
 const sleep = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
 
-async function retryOn429(requestHandler: Function, maxRetries = 5, delay = 1000) {
+async function retryOn429(
+  requestHandler: Function,
+  maxRetries = 5,
+  delay = 1000,
+) {
   for (let attempt = 1; attempt <= maxRetries; attempt++) {
     try {
       // Try running the handler (i.e., the crawl request)
       await requestHandler();
       break; // If successful, exit the retry loop
     } catch (err: any) {
-      if (err.message.includes('429') || err.message.includes('Too Many Requests')) {
-        console.log(`Received 429 error, retrying after delay... (Attempt ${attempt} of ${maxRetries})`);
+      if (
+        err.message.includes("429") ||
+        err.message.includes("Too Many Requests")
+      ) {
+        console.log(
+          `Received 429 error, retrying after delay... (Attempt ${attempt} of ${maxRetries})`,
+        );
 
         if (attempt < maxRetries) {
           // Exponentially increase the delay
           await sleep(delay * attempt);
         } else {
-          console.log('Max retries reached. Skipping this request.');
+          console.log("Max retries reached. Skipping this request.");
           throw err; // If the max retries are reached, rethrow the error
         }
       } else {
@@ -83,48 +92,54 @@ export async function crawl(config: Config) {
       {
         // Use the requestHandler to process each of the crawled pages.
         async requestHandler({ request, page, enqueueLinks, log, pushData }) {
-          await retryOn429(async () => {
-            const title = await page.title();
-            pageCounter++;
-            log.info(
-              `Crawling: Page ${pageCounter} / ${config.maxPagesToCrawl} - URL: ${request.loadedUrl}...`,
-            );
+          await retryOn429(
+            async () => {
+              const title = await page.title();
+              pageCounter++;
+              log.info(
+                `Crawling: Page ${pageCounter} / ${config.maxPagesToCrawl} - URL: ${request.loadedUrl}...`,
+              );
 
-            // Use custom handling for XPath selector
-            if (config.selector) {
-              if (config.selector.startsWith("/")) {
-                await waitForXPath(
-                  page,
-                  config.selector,
-                  config.waitForSelectorTimeout ?? 1000,
-                );
-              } else {
-                await page.waitForSelector(config.selector, {
-                  timeout: config.waitForSelectorTimeout ?? 1000,
-                });
+              // Use custom handling for XPath selector
+              if (config.selector) {
+                if (config.selector.startsWith("/")) {
+                  await waitForXPath(
+                    page,
+                    config.selector,
+                    config.waitForSelectorTimeout ?? 1000,
+                  );
+                } else {
+                  await page.waitForSelector(config.selector, {
+                    timeout: config.waitForSelectorTimeout ?? 1000,
+                  });
+                }
               }
-            }
 
-            const html = await getPageHtml(page, config.selector);
+              const html = await getPageHtml(page, config.selector);
 
-            // Save results as JSON to ./storage/datasets/default
-            await pushData({ title, url: request.loadedUrl, html });
+              // Save results as JSON to ./storage/datasets/default
+              await pushData({ title, url: request.loadedUrl, html });
 
-            if (config.onVisitPage) {
-              await config.onVisitPage({ page, pushData });
-            }
+              if (config.onVisitPage) {
+                await config.onVisitPage({ page, pushData });
+              }
 
-            // Extract links from the current page
-            // and add them to the crawling queue.
-            await enqueueLinks({
-              globs:
-                typeof config.match === "string" ? [config.match] : config.match,
-              exclude:
-                typeof config.exclude === "string"
-                  ? [config.exclude]
-                  : config.exclude ?? [],
-            });
-          }, 5, 1000); // Max 5 retries with initial 1-second delay
+              // Extract links from the current page
+              // and add them to the crawling queue.
+              await enqueueLinks({
+                globs:
+                  typeof config.match === "string"
+                    ? [config.match]
+                    : config.match,
+                exclude:
+                  typeof config.exclude === "string"
+                    ? [config.exclude]
+                    : config.exclude ?? [],
+              });
+            },
+            5,
+            1000,
+          ); // Max 5 retries with initial 1-second delay
         },
         maxRequestsPerCrawl: config.maxPagesToCrawl,
         preNavigationHooks: [
@@ -147,9 +162,8 @@ export async function crawl(config: Config) {
               await page.context().addCookies(cookies);
             }
 
-            await page.route(
-              `**/*.{${RESOURCE_EXCLUSIONS.join()}}`,
-              (route) => route.abort("aborted"),
+            await page.route(`**/*.{${RESOURCE_EXCLUSIONS.join()}}`, (route) =>
+              route.abort("aborted"),
             );
             log.info(`Aborting requests for this resource-excluded route`);
           },
