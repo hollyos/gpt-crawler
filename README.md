@@ -1,23 +1,79 @@
-# GPT Crawler <!-- omit from toc -->
+# GPT Crawler <!-- omit from toc -->#
 
 Crawl a site to generate knowledge files to create your own custom GPT from one or multiple URLs
 
 ![Gif showing the crawl run](https://github.com/BuilderIO/gpt-crawler/assets/844291/feb8763a-152b-4708-9c92-013b5c70d2f2)
 
-- [Example](#example)
-- [Get started](#get-started)
-  - [Running locally](#running-locally)
-    - [Clone the repository](#clone-the-repository)
-    - [Install dependencies](#install-dependencies)
-    - [Configure the crawler](#configure-the-crawler)
-    - [Run your crawler](#run-your-crawler)
-  - [Alternative methods](#alternative-methods)
-    - [Running in a container with Docker](#running-in-a-container-with-docker)
-    - [Running as an API](#running-as-an-api)
-  - [Upload your data to OpenAI](#upload-your-data-to-openai)
-    - [Create a custom GPT](#create-a-custom-gpt)
-    - [Create a custom assistant](#create-a-custom-assistant)
-- [Contributing](#contributing)
+---
+
+## How to use
+
+1. Clone or download the repository
+
+    ```bash
+      git clone git@github.com:hollyos/gpt-crawler.git
+    ```
+
+2. Update the `./config.ts` `list` value to the urls you wish to crawl.
+
+    ```ts
+    const list = [{
+      url: "https://www.w3.org",
+      category: "web",
+      outputFileName: "w3c-org",
+    },
+    {
+      url: "https://a11y-101.com",
+      category: "a11y",
+      outputFileName: "a11y-101",
+    },
+    {
+      url: "https://www.w3.org/WAI",
+      category: "a11y",
+      outputFileName: "w3c-wai",
+    }]
+    ```
+
+    > The crawler will naviagate to any linked pages from the `url` provided
+
+    | Property | required | Description |
+    | -------- | -------- | ----------- |
+    | `url`    | `true`   | The url of the page to be crawled. |
+    | `category` | `false` | Used for grouping the results. This will create a sub-directory in the outputs for the category. |
+    | `outputFileName` | `true` | The preferred name of the file for output. The crawler will automatically create multiple files based on the max allowed size on Chat GPT. |
+
+3. Install the packages
+
+    ```bash
+    npm i
+    ```
+
+4. Run the crawler
+
+    ```bash
+    npm start
+    ```
+---
+
+## Original Documentation
+
+- [GPT Crawler #](#gpt-crawler-)
+  - [How to use](#how-to-use)
+  - [Original Documentation](#original-documentation)
+  - [Example](#example)
+  - [Get started](#get-started)
+    - [Running locally](#running-locally)
+      - [Clone the repository](#clone-the-repository)
+      - [Install dependencies](#install-dependencies)
+      - [Configure the crawler](#configure-the-crawler)
+      - [Run your crawler](#run-your-crawler)
+    - [Alternative methods](#alternative-methods)
+      - [Running in a container with Docker](#running-in-a-container-with-docker)
+      - [Running as an API](#running-as-an-api)
+    - [Upload your data to OpenAI](#upload-your-data-to-openai)
+      - [Create a custom GPT](#create-a-custom-gpt)
+      - [Create a custom assistant](#create-a-custom-assistant)
+  - [Contributing](#contributing)
 
 ## Example
 
