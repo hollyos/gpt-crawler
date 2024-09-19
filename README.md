@@ -10,49 +10,52 @@ Crawl a site to generate knowledge files to create your own custom GPT from one 
 
 1. Clone or download the repository
 
-    ```bash
-      git clone git@github.com:hollyos/gpt-crawler.git
-    ```
+   ```bash
+     git clone git@github.com:hollyos/gpt-crawler.git
+   ```
 
 2. Update the `./config.ts` `list` value to the urls you wish to crawl.
 
-    ```ts
-    const list = [{
-      url: "https://www.w3.org",
-      category: "web",
-      outputFileName: "w3c-org",
-    },
-    {
-      url: "https://a11y-101.com",
-      category: "a11y",
-      outputFileName: "a11y-101",
-    },
-    {
-      url: "https://www.w3.org/WAI",
-      category: "a11y",
-      outputFileName: "w3c-wai",
-    }]
-    ```
+   ```ts
+   const list = [
+     {
+       url: "https://www.w3.org",
+       category: "web",
+       outputFileName: "w3c-org",
+     },
+     {
+       url: "https://a11y-101.com",
+       category: "a11y",
+       outputFileName: "a11y-101",
+     },
+     {
+       url: "https://www.w3.org/WAI",
+       category: "a11y",
+       outputFileName: "w3c-wai",
+     },
+   ];
+   ```
 
-    > The crawler will naviagate to any linked pages from the `url` provided
+   > The crawler will naviagate to any linked pages from the `url` provided
 
-    | Property | required | Description |
-    | -------- | -------- | ----------- |
-    | `url`    | `true`   | The url of the page to be crawled. |
-    | `category` | `false` | Used for grouping the results. This will create a sub-directory in the outputs for the category. |
-    | `outputFileName` | `true` | The preferred name of the file for output. The crawler will automatically create multiple files based on the max allowed size on Chat GPT. |
+   | Property         | required | Description                                                                                                                                |
+   | ---------------- | -------- | ------------------------------------------------------------------------------------------------------------------------------------------ |
+   | `url`            | `true`   | The url of the page to be crawled.                                                                                                         |
+   | `category`       | `false`  | Used for grouping the results. This will create a sub-directory in the outputs for the category.                                           |
+   | `outputFileName` | `true`   | The preferred name of the file for output. The crawler will automatically create multiple files based on the max allowed size on Chat GPT. |
 
 3. Install the packages
 
-    ```bash
-    npm i
-    ```
+   ```bash
+   npm i
+   ```
 
 4. Run the crawler
 
-    ```bash
-    npm start
-    ```
+   ```bash
+   npm start
+   ```
+
 ---
 
 ## Original Documentation
